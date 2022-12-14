@@ -121,7 +121,7 @@ iter/N/r/selfplay_train_sum.tsv contains a summary of the TRAIL's performance at
 
 
 ### Provers
-Trail uses a modified version of eprover that is checked out and used automatically, so you don't need to build it yourself
+Trail uses a modified version of [eprover](https://github.com/eprover/eprover) that is checked out and used automatically, so you don't need to build it yourself
 (assuming you are using a linux system).
 In general, you should never need to use a different version.  
 From time to time, we make changes to the interface between Trail and eprover, so one version of eprover may not work with a different version of Trail; do NOT assume that eprover is the same from version to version.
