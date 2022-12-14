@@ -1,0 +1,237 @@
+POOL_SIZE=8 # -8
+POOL_SIZE=16 
+NUM_TRAINING_ITERS=15 # num_iterations: 15
+NUM_TRAINING_ITERS=1000 # num_iterations: 1000
+
+# ===============YAML====================
+
+#experiment_dir: /disk0/experiments/eprover_gcnembed_hetero_edges_2convs_topoBatch_64EmbSize_resnet_376clauseEmbedLayer_nohistory_more_exploration_1.0minReward_rootReadOutOnly_atleast3Epochs/mptp2078b
+#valid_test_run_every: 100
+#valid_run_every: 100
+#create_perfect_games: 0
+#max_perfect_games_per_problem: 30
+#only_perfect_games: 0
+#skip_training: 0
+#check_proofs_per_eps: 1
+#check_proofs_per_iteration: 0
+#quality_sample_size: 0.2
+#enable_unit_testing: 0
+#ut_baseline_experiment_dir: ../../data/stable_baseline_runs/
+#ut_num_iterations_to_average: 5
+#num_models: 1
+#ensemble_repeat: 0
+#MCTSAggr: mean
+
+vectorizer: mem_htemplate
+treat_constant_as_function: True # 1
+
+#keepTopKExamples: 500000
+numItersForTrainExamplesHistory: 1
+#max_pattern_ct: 500
+append_age_features: True # 1
+only_age_features: False # 0
+nnet_model: attentive_pooling
+num_attn_heads: 1
+heads_max: True # 1
+dotprot_attn: True # 1
+end2end_multihead: False # 0
+keep_emb_size: 1
+
+# in the original code, getTimeBudget and getStepsBudget are commented out
+#time_limit_start: 0.005
+#time_limit_factor: 1.5
+#steps_limit_start: 0.005
+#steps_limit_factor: 1.0
+
+#hash_per_iteration: 0
+#hash_per_problem: 0
+#filter_perfect_games: 0
+filter_collected_examples: False # 0
+
+max_score: 10.0
+#max_actions: 1000001
+#sortByTime: 0
+#delete_cache: 1
+#save_proofs_json: 1
+#numMCTSSims: 0
+epochs: 10
+epochs_iter1: 10
+train_stopping_factor: 1000000 #stopping_factor: 1000000
+
+#repeat_valid: 1
+#repeat_test: 1
+#replay: 1
+#numEps: 0
+#min_number_of_steps: 1000000
+#updateThreshold: -2.0
+#keep_latest_model: 0
+temp: 1.1343604929886903
+tempThreshold: 11
+#arenaCompare: 1
+#arenaCompareTest: 1
+batch_size: 32
+#pool_size: -8
+#max_pool_chunk_size: 1
+#max_tasks_per_child: 1
+#gpuID: -1
+#disable_gpu: 0
+lr: 0.001
+optimizer: Adam
+clause_embedding_layers: 4
+clause_embedding_size: 376
+
+
+# in the original code:
+#    if not args.include_action_type:
+#        print("Single network for both actions and clauses. action_embedding_layers will be set to clause_embedding_layers"+
+#              " and action_embedding_size will be set to clause_embedding_size")
+#        args.action_embedding_size = args.clause_embedding_size
+#        args.action_embedding_layers = args.clause_embedding_layers
+# Now, if include_action_type==False
+# but not action_embedding_size==clause_embedding_size and         action_embedding_layers==clause_embedding_layers
+# then we reject the input
+include_action_type: False # 0
+#action_embedding_layers: 2
+#action_embedding_size: 100
+action_embedding_layers: 4
+action_embedding_size: 376
+
+num_gcn_conv_layers: 2
+num_node_embedding_linear_layers: 1
+node_type_embedding_size: 64
+node_char_embedding_size: 64
+charcnn_filters: "2,20;3,20;4,20"
+embedding_activation: relu
+graph_embedding_add_self_loops: True # originally, no arg, so 'true'
+use_sparse_gcn_embed: True # originally, no arg, so 'true'
+mpnn_node_state_dim: 64
+mpnn_edge_state_dim: 32
+mpnn_iters: 1
+mpnn_node_ct: 3000
+mpnn_edge_ct: 250
+max_reward_per_problem: 2.0
+#analyze_wieght_matrix: 0
+#num_iterations: 15  sh var
+#include_stopped_episodes: 0
+#max_time_limt: 100
+#all_problems_train: 1
+#all_problems_valid: 1
+#all_problems_test: 1
+num_syms: 0
+
+policy_loss_weight: 1.0
+#cpuct: 20.0
+#decay_mcts_sims: 0.99
+#decay_cpuct: 0.99
+early_stopping_patience: 3
+dropout: 0.5682203997117492
+reward_depth_weight: 1.0
+reward_breadth_weight: 0.0
+use_useful_fraction: False # 0
+
+# I can't remember why, but I apparently ended up using None instead of 1.0;
+# in any case, the value 1.0 (and now None) disables everything in the original code.
+# Since None can't be entered as a floating point value, we have to leave this at the default setting;
+# see optdefaults.tcfg
+#discount_factor: 1.0
+
+binary_reward: False # 0
+
+advantage: False # 0
+# in the original code:
+#    print("number of MCTS simulation <= 1 and no advantage, value_loss_weight is then set to 0")
+# that is, if advantage is false, then it simply changed value_loss_weight to 0.0
+# Now, instead of changing the input, we reject value_loss_weight if it is not 0.0
+#value_loss_weight: 1.0
+value_loss_weight: 0.0
+
+#learn_from_init: 0
+#clear_loaded_examples_cache: 1
+#use_external_reasoner: 1
+#use_pyspark_reasoner: 0
+#external_reasoner_port: 11111
+#num_external_reasoners: 1
+#drop_all_collected_examples_every: 1000
+#use_external_reasoner_strategy: 0
+#use_external_reasoner_strategy_at_validation: 0
+#decay_external_strategy_reliance: 0.0
+#external_strategy_allow_exploration: 0.0
+use_external_parser: False # 0
+external_parser_port: 11111
+random_predict: False # 0
+deterministic_strategy: False # 0
+action_seed: 0
+#max_level_repeat: 1
+#graduation_requirement: 0.0
+#graduation_requirement_abs: 0.0
+reward_norm: 1
+#timeout_growth_factor: 1.0
+#allow_growth_at_validation: 0
+#timeout_upper_bound: 1200
+#save_training_examples: 0
+value_net_layers: 2
+value_net_units: 100
+#drop_redundant_examples: 0
+#report_dropping: 0
+#log: INFO
+#dropping_std_factor: 0.125
+#dropping_ratio: 0.75
+#aggressive_dropping: 0
+keep_top_attempts_per_problem: 10000
+#topk_for_dropping: 3
+#keep_at_least: 3
+wd: 0.01
+beta1: 0.9
+beta2: 0.99
+#aggressive_dropping_strategy: 0
+grad_dot_prod: False # 0
+#timeout_growth_factor: 1.0
+#timeout_upper_bound: 100
+#ignore_hard_prob_time_limit: 3600
+#num_iterations: 1000
+use_time_for_reward_calc: False # 1
+#pool_size: 16 sh var
+proc_feat_type: simple_sum
+dotprot_attn: False # 0
+graph_embedding_output_size: 512
+vectorizer: gcn_embed
+#restart_gpu_server_every: 1000
+#gpu_server_ip: 10.187.57.240
+#gpu_server_port: 9998
+enigma_size: 2000
+herbrand_vector_size: 500
+enigma_seq_len: 3
+incl_enigma_subseq: True # 1
+predicate_term_anonymity_level: 2
+#e_prover_home_dir: /disk0/eprover/
+#use_e_prover: 1
+#graph_embedding_add_self_loops:  redundant, appears above
+#use_sparse_gcn_embed:  redundant, appears above
+num_gcn_conv_layers: 2
+num_node_embedding_linear_layers: 2
+node_type_embedding_size: 64
+graph_embedding_output_size: 64
+#graph_embedding_heterogeneous: 
+graph_embedding_max_depth: 9000
+entropy_reg_loss_weight: 0.01
+pos_example_fraction: 1.0
+early_stopping_patience: 3
+epochs: 10
+epochs_iter1: 10
+temp: 3.0
+tempThreshold: 11000
+decay_temp: 0.93
+min_temp: 1.0
+#first_epoch_saved_model: 2
+min_reward_per_problem: 1.0
+#root_readout_only:
+init_state_name_node_embeddings: True
+# apparently used as the initial model, I don't have this, though
+#load_model_only_file: /disk0/experiments/eprover_gcnembed_hetero_edges_2convs_topoBatch_64EmbSize_resnet_376clauseEmbedLayer_nohistory_more_exploration_1.0minReward_rootReadOutOnly_atleast3Epochs/mptp2078b/model_0_train_iteration_9.pth.tar #init_model_0_checkpoint.pth.tar
+
+
+
+
+#original command:
+#python -u main.py --experiment_dir /disk0/experiments/eprover_gcnembed_hetero_edges_2convs_topoBatch_64EmbSize_resnet_376clauseEmbedLayer_nohistory_more_exploration_1.0minReward_rootReadOutOnly_atleast3Epochs/mptp2078b   --train_data_dir /disk0/Trail/data/mptp2078b_trail_cached_with_cache/  --valid_test_run_every 100 --valid_run_every 100 --create_perfect_games 0 --max_perfect_games_per_problem 30 --only_perfect_games 0 --skip_training 0 --check_proofs_per_eps 1 --check_proofs_per_iteration 0 --quality_sample_size 0.2 --enable_unit_testing 0 --ut_baseline_experiment_dir ../../data/stable_baseline_runs/ --ut_num_iterations_to_average 5 --num_models 1 --ensemble_repeat 0 --MCTSAggr mean --vectorizer mem_htemplate --treat_constant_as_function 1 --include_action_type 0 --read_all_problem_files 0 --keepTopKExamples 500000 --numItersForTrainExamplesHistory 1  --max_pattern_ct 500  --append_age_features 1 --only_age_features 0 --nnet_model attentive_pooling --num_attn_heads 1 --heads_max 1 --dotprot_attn 1 --end2end_multihead 0 --keep_emb_size 1 --time_limit_start 0.005 --time_limit_factor 1.5 --steps_limit_start 0.005 --steps_limit_factor 1.0 --hash_per_iteration 0 --hash_per_problem 0 --filter_perfect_games 0 --filter_collected_examples 0 --max_score 10.0 --max_actions 1000001 --sortByTime 0 --delete_cache 1 --save_proofs_json 1 --numMCTSSims 0 --epochs 10 --epochs_iter1 10 --stopping_factor 1000000 --repeat 1 --repeat_valid 1 --repeat_test 1 --replay 1 --numEps 0  --min_number_of_steps 1000000 --updateThreshold -2.0 --keep_latest_model 0 --temp 1.1343604929886903 --tempThreshold 11  --arenaCompare 1 --arenaCompareTest 1 --batch_size 4 --pool_size -8 --max_pool_chunk_size 1 --max_tasks_per_child 1 --gpuID -1 --disable_gpu 0 --lr 0.001 --optimizer Adam --clause_embedding_layers 4 --clause_embedding_size 376 --action_embedding_layers 2 --action_embedding_size 100 --num_gcn_conv_layers 2 --num_node_embedding_linear_layers 1 --node_type_embedding_size 64 --node_char_embedding_size 64 --charcnn_filters "2,20;3,20;4,20"  --embedding_activation relu  --graph_embedding_add_self_loops --use_sparse_gcn_embed --mpnn_node_state_dim 64 --mpnn_edge_state_dim 32 --mpnn_iters 1 --mpnn_node_ct 3000 --mpnn_edge_ct 250 --max_reward_per_problem 2.0  --analyze_wieght_matrix 0 --num_iterations 15 --include_stopped_episodes 0 --max_time_limt 100  --all_problems_train 1  --all_problems_valid 1 --all_problems_test 1 --num_syms 0 --value_loss_weight 1.0 --policy_loss_weight 1.0 --entropy_reg_loss_weight 0.0 --cpuct 20.0 --decay_mcts_sims 0.99 --decay_temp 0.99 --decay_cpuct 0.99 --early_stopping_patience 3 --dropout 0.5682203997117492 --reward_depth_weight 1.0 --reward_breadth_weight 0.0 --use_useful_fraction 0 --discount_factor 1.0 --binary_reward 0 --advantage 0 --learn_from_init 0 --clear_loaded_examples_cache 1 --use_external_reasoner 1 --use_pyspark_reasoner 0 --external_reasoner_port 11111 --num_external_reasoners 1  --drop_all_collected_examples_every 1000 --use_external_reasoner_strategy 0 --use_external_reasoner_strategy_at_validation 0 --decay_external_strategy_reliance 0.0 --external_strategy_allow_exploration 0.0 --use_external_parser 0 --external_parser_port 11111 --random_predict 0 --deterministic_strategy 0 --action_seed 0  --max_level_repeat 1 --graduation_requirement 0.0 --graduation_requirement_abs 0.0 --reward_norm 1 --timeout_growth_factor 1.0 --allow_growth_at_validation 0 --timeout_upper_bound 1200 --save_training_examples 0 --value_net_layers 2 --value_net_units 100 --drop_redundant_examples 0 --report_dropping 0 --log INFO --dropping_std_factor 0.125 --dropping_ratio 0.75 --aggressive_dropping 0 --keep_top_attempts_per_problem 10000 --topk_for_dropping 3 --keep_at_least 3 --wd 0.01 --beta1 0.9 --beta2 0.99 --aggressive_dropping_strategy 0 --grad_dot_prod 0 --timeout_growth_factor 1.0 --timeout_upper_bound 100  --ignore_hard_prob_time_limit 3600 --num_iterations 1000 --use_time_for_reward_calc 1  --pool_size 16  --proc_feat_type simple_sum --dotprot_attn 0 --graph_embedding_output_size 512 --vectorizer gcn_embed --restart_gpu_server_every 1000 --gpu_server_ip 10.187.57.240   --gpu_server_port 9998  --enigma_size 2000 --herbrand_vector_size 500 --enigma_seq_len 3 --incl_enigma_subseq 1 --predicate_term_anonymity_level 2  --e_prover_home_dir /disk0/eprover/ --use_e_prover 1  --graph_embedding_add_self_loops --use_sparse_gcn_embed --num_gcn_conv_layers 2 --num_node_embedding_linear_layers 2 --node_type_embedding_size 64 --graph_embedding_output_size 64 --graph_embedding_heterogeneous  --graph_embedding_max_depth 9000 --entropy_reg_loss_weight 0.0 --pos_example_fraction 1.0 --early_stopping_patience 3  --epochs 10 --epochs_iter1 10 --temp 3 --tempThreshold 11000 --decay_temp 0.89 --min_temp 1.0  --first_epoch_saved_model 2 --min_reward_per_problem 1.0 --root_readout_only  --load_model_only_file /disk0/experiments/eprover_gcnembed_hetero_edges_2convs_topoBatch_64EmbSize_resnet_376clauseEmbedLayer_nohistory_more_exploration_1.0minReward_rootReadOutOnly_atleast3Epochs/mptp2078b/model_0_train_iteration_9.pth.tar #init_model_0_checkpoint.pth.tar
+

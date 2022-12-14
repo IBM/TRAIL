@@ -1,0 +1,25 @@
+%--------------------------------------------------------------------
+%---- Simple problem in TPTP format:
+%---- Knowing that there exists a square, that squares are rectangles
+%---- and that rectangles have 4 sides, is there a shape that has 4 sides
+
+
+%---- Axioms:
+
+fof(c_is_a_square,axiom,(
+    square(c))).
+
+
+fof(squares_are_rectangles,axiom,(
+  ! [S]: (square(S) => rectangle(S)) )).
+
+
+fof(rectangles_have_four_sides,axiom,(
+    ! [R]: (rectangle(R) => four_sides(S)) )).
+
+
+
+%---- Conjecture
+
+fof(there_exists_a_shape_with_four_sides,conjecture,(
+    ? [H] : four_sides(H) )).

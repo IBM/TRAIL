@@ -1,0 +1,662 @@
+#
+# *********** DO NOT COPY THIS FILE **********
+#
+# To avoid confusion, put only the non-default values in your own config file.
+# If you just edit this file, we can recover the non-default values afterwards, but it is awkward and may produce errors.
+#
+
+# uppercase options are used as shell variables
+
+# Your settings will replace the settings in this file; the resulting shell script script will have
+# variables in the same order, so you can reference variables that occur earlier in this script (e.g. $TRAIL_DIR).
+# The order the variables occur in YOUR script DOESN'T MATTER;
+# we replace the default values in this script with the values in your script,
+# retaining the order of variables in this script.
+# Otherwise, how would we specify the final ordering, unless we require the system to
+# figure out if the variables can be ordered with no cycles?
+# It can be done, but (so far) the additional complication is unnecessary.
+# This is only true for shell variables; the python yaml fields can't reference each other.
+
+# This file contains
+# - bash variable settings, used by the Trail scripts (e.g. trail.sh)
+# - settings to initialize the (immutable) python dataclass gopts defined in gopts.py
+
+# We essentially just split this file in two; it is considered better to do this than to use two separate files.
+# All variables in  UPPER CASE  are shell variables
+# All variables in  lower case  are python yaml fields
+
+# This file specifies defaults.
+# When you invoke trail, you must supply your own file as an argument, which will override these defaults.
+# While you can in principle make a copy of this file and edit it, 
+# but it is probably clearer to only put variables in your config file that you actually set to non-default values.
+
+# The bash variables can also be set via environment variables.
+# That can be accomplished in any of the standard ways:
+#   export VAR=val   in your shell
+#   VAR=val trail.sh ....
+#
+# In the second case, bash sets VAR=val while evaluating the command, but it isn't set.
+# Note that it visually looks very much like passing a named parameter, only the parameters appear before the script, not after it.
+
+# both kinds of variables can be passed as arguments:
+# trail.sh X=val y:yow
+#
+# bash vars require '='; yaml vars ':'.
+
+# We could in principle accept more than on tcfg file, but we don't.
+# If no tcfg file is supplied, then all variables have the default value (specified in this file).
+
+# The general idea is to make the experiment dir self-contained;
+# we create the experiment_dir, copy (or link) whatever Trail files we need into that dir, 
+# and after we don't need to know where Trail is.
+# You can in fact edit your Trail source files while the code is running and it won't affect it;
+# you can have several runs going at the same time, each with a different version.
+
+# The following fields are used to initialize environment variables for the scripts, 
+# and so following the usual unix convention are in uppercase;
+# they aren't used in the python code, and in fact aren't even in the gopts dataclass object.
+# 
+# I could have used bash syntax to only set variables that have no value, like this:
+#    : ${TRAIL_DIR:=$HOME/Trail}
+#
+# That seems ugly, though; furthermore, you don't actually see what variables are set to.
+#
+# Instead, I simply leave out any assignments to variables that are are set.
+# You can see what the final settings are by looking at the 'opts.sh' file in the experiment dir.
+# It will have three sections:
+#   #ENV VARS
+#   ...
+#   #DEFAULT SETTINGS:
+#   ...
+#   #CONFIG FILE SETTINGS:
+#   ...
+# The first will contain the env settings.
+# The second will be the lines in this file that AREN'T set in the env.
+# The last are the relevent lines in the config file that you passed.
+# This script is evaluted as-is to set the variables.
+# Hopefully, this will make it very clear what is going on.
+
+# These assignments must always be ON ONE LINE; we just grep them out and I want that to be simple.
+
+# In general, don't use env vars in the python code, with two exceptions.
+# - sometimes both eprover and the python code need to see the option;
+#   in that case, make it an env var and access it in python using os.environ["MY_ENV_VAR"]
+# - you may just want to implement a personal hack that you don't want to document;
+#   in that case, it is easy to implement a boolean flag just using
+#     if "MY_HACKY_DEBUG_SWITCH" in os.environ:
+#         do_hacky_stuff()
+#   The very use of such a test should alert readers of the code that it is experimental.
+
+# Where Trail is installed; we could probably infer that from the name of the script you invoke, of course.
+TRAIL_DIR=$HOME/Trail
+
+# The time limit for the combined Trial/E prover run.
+# In principle, you could change this during the run.
+TIME_LIMIT=100
+
+# should be empty or single digit (0-9) selecting strategy
+TRAIL_AUTO=''
+
+# this causes problems for auto-schedule
+SKIP_PRESATURATE=1
+
+# do NOT bother with auto-schedule; launch-ee.sh adds that if TRAIL_AUTO is non-null
+E_OPTIONS="-H --filter-orphans-limit --forward-contract-limit -tKBO6 --literal-selection-strategy=PSelectLargestNegLit --training-examples=1 --output-level=0 --proof-object --resources-info --print-statistics"
+
+
+# The default just uses all, in a random order (different every time).
+CHOOSE_PROBS=chooseAllProblems
+
+# I recommend moving the data to your homedir like this:
+TRAIN_DATA_DIR=~/Trail-data/mptp2078b_dataset/
+# that way your runs aren't disturbed if you delete or move the Trail dir
+# To use more than one DD, you have to use '%' instead of a space (see GUIDE_TRAIL below).
+# Each DD must have a prefix associated with it; in this example, 'm' and 't':
+# TRAIN_DATA_DIR=~/Trail-data/mptp2078b_dataset=m%~/Trail-data/tptp_2k_split_train=t
+
+# grep processor /proc/cpuinfo | wc -l
+# should produce the number of processors on this machine.
+#POOL_SIZE=$((8 * $(grep processor /proc/cpuinfo | wc -l) / 10))
+# This seems to cause problems - the '*' gets interpreted as a shell wildcard
+POOL_SIZE=16
+
+# This is the number of times we run episodes and then do GPU training
+NUM_TRAINING_ITERS=1000 
+
+USE_LAUNCH_CCC='' # run the CCC launch script locally, for debugging
+
+# It this is non-empty, it will be used as the file name of the initial model.
+MODEL0=''
+
+
+KEEP_FAILED_EPISODES='' # if non-empty, don't delete episode data if it fails
+KEEP_EPISODES=''  # if empty, then episode data is deleted at the end of an iteration (after GPU training).
+KEEP_EXAMPLES=''  # if empty, then delete gpu_server/examples after the entire run completes, and also after every iter if numItersForTrainExamplesHistory=1
+
+KEEP_MODELS=yes # If empty, then when a new model is created, the model from the previous iter is removed.
+
+# if non-empty, invokes code/$GUIDE_TRAIL to choose moves for Trail
+# You can invoke your guide trail code using the python debugger, but since I don't properly
+# handle spaces in shell variable values, you need to use '%' instead of ' '; see the example below.
+GUIDE_TRAIL='' # if non-empty, invokes $GUIDE_TRAIL to choose moves for Trail
+#GUIDE_TRAIL=expdir/code/guide_trail.py
+#GUIDE_TRAIL='python%-m%pdb%expdir/code/guide_trail.py'
+
+PS_OUTPUT='' # if non-empty, runs ps periodically to while the episode is running
+
+LOCAL_LAUNCH='' # if non-empty, doesn't submit a job to runs episodes on CCC; debugging
+
+# opts that you may want to change
+# std_{ep,gpu}_opts are functions defined in trail-fns.sh.
+# If you want to use different options, define your own function and set it here.
+# Most likely you'll just want to set the queue, which you can do with {EP,GPU}_QUEUE.
+EP_QUEUE=x86_6h
+JB_EP_OPTS=std_ep_opts   # std_ep_opts  reads EP_QUEUE
+GPU_QUEUE=x86_12h
+GPU_MEM=40
+JB_GPU_OPTS=std_gpu_opts # std_gpu_opts reads GPU_QUEUE
+
+MAX_EE_ATTEMPTS=6 # how many times to continue on from a episode-job failure (doesn't redo episodes run in previous tries); min value is 1
+MAX_TRAIN_ATTEMPTS=3 # how many times to try GPU-training; min value is 1.  no attempt is made to re-use the result of previous attempts.
+
+# don't do GPU training last iter; set to non-blank if you do.
+TRAIN_LAST_ITER=''
+
+
+# Trail-eprover options.  eprover reads this directly from the env.
+# unlike other bash variables, the python code also reads this.  no sense in having a duplicate python var.
+TE_GET_LITERAL_SELECTION='' # non-empty if you want eprover to compute and send selected literals to Trail
+
+
+# To reduce overhead, Trail's version of eprover prints available actions/processed clauses
+# only when they first appear; we 'register' the clauses with Trail, and afterwards refer
+# to them by the index Trail assigned them.
+# The problem is that
+#   - eprover sometimes rewrites its clauses
+#   - I don't know how to tell when that happens.
+# So, it can happen that eprover changes clause 23, but Trail continues to use its original value.
+# In addition to using out-of-date vectorized clauses for training, we also miss examples,
+# because the clauses Trail thinks it chose don't show up in the clauses eprover prints to trainpos.
+# Ideally we should let Trail know when clauses change.
+# The idea is that it takes time to do all this, so only do it if really necessary.
+# Until now, we haven't tried to much and it hasn't been so bad.
+# Now we're re-registerings ALL clauses whenever an action is chosen that has exactly one literal.
+# It may in fact be the case that this is overkill, though, so I'm allowing it to be disabed.
+# It turns out that of 1441 cases I looked at 76 still have 'missing' actions in trainpos (%5), so there is still a problem somewhere.
+PRINT_SELECTED_CLAUSE='' # if non-empty, eprover and Trail print the selected clause
+CHECK_SELECTED_CLAUSE='' # if non-empty, eprover prints selected clause to Trail so it can check it
+RE_REGISTER_ON_SINGLE_LIT_ACTION='' # if non-empty, eprover re-registers all clauses whenever a single-literal clause is selected
+ALWAYS_SELECT_SINGLE_LIT_ACTION=''
+
+
+# The rest of the bash options are very low-level.
+# It is very unlikely that you would want to modify them.
+
+# trail-loop.sh checks the state of running trail-iter.sh processes periodically.
+# It will perform a check if either a process finishes or this many seconds elapse.
+# So this is an upper limit on how long it will wait before checking.
+ITER_LOOP_WAIT=300
+
+# it may be that even after a CCC job is flagged as RUN that it isn't actually started.
+# If the output file isn't created after this many seconds, we will kill the CCC job;
+# that will cause the trail-iter script to either try again or fail (if it has tried too many times).
+# This is only approximate since we check these things only periodically ITER_LOOP_WAIT or so secs.
+JB_START_LIMIT=300 # how long we will wait for a job to start
+
+JB_OUTPUT_LIMIT=300 # if the output file hasn't been written to in this many secs, we kill the CCC job
+
+# limits how many iterations ahead one subjob can get from the another
+# '1' means keep in lockstep; allow no subjob to start the next iter until all have completed the current iter.
+MAX_SUBJOB_ITER_DIFF=2
+
+TRAIN_ON_OTHER_SUBJOB_EXAMPLES='' # if there are subjobs, have each one take examples from the others at each iter
+
+PYTHONHASHSEED=0 # must be non-0 for deterministic mode.
+
+DROPDUPS='0' # personal hack, don't use
+
+# Currently, all episodes solved in the current iteration are used for training.
+# if this is not the string '0.0', then the most recent episode is used only if its time is at least as good ONLY_BEST_EPISODES*(the best so far).
+# We ignore these episodes using this hack:
+# Some problems are so simple that eprover solves them immediately.
+# We count these problems solved by created a 'noexamples' file rather than an 'etar' file.
+# Our hack is to just create a noexamples file if this option says to discard the episode.
+#ONLY_BEST_EPISODES=1.0 # use the episode examples only if its solution time is at least as fast as any prior episode
+ONLY_BEST_EPISODES=0.0 # always use the episode examples
+
+# If non-nil, an iter will be discarded if it performs worse than the previous one.
+# This motivated the switch so that in an iter
+#  first a model is trained
+#  then that model is run on episodes
+DROP_DECREASING_ITERS=''
+
+###########################
+# It is no longer the case that the variable types (bash vs yaml) must be kept separate,
+# but I still do so, since it seems clearer.
+
+# lowercase options are read (as yaml) into the gopts python object
+
+# Note that the python code doesn't "know" where Trail is installed;
+# everything needed it copied from the Trail install directory to the experiment_dir,
+# so it becomes self-contained.
+
+# I manually check the types of these options when they are read.
+
+# Maximun number of possible actions at a given decision point
+max_actions: 1000001
+
+# An episode ends with failure after stopping_factor*problem_difficulty
+train_stopping_factor: 1000000 #stopping_factor: 1000000
+
+# Minimum Number of steps before a game ends
+train_min_number_of_steps: 1000000
+
+
+# Indicates whether the memory efficient herbrand vectorizer should treat constants as functions
+treat_constant_as_function: True 
+
+# Indicates whether to include action type in the vectorization
+# (used for sequent calculus)
+include_action_type: False  
+
+# Number of layers in the fully connected network that computes
+# clause/action embeddings from their sparse representation. 0 means that the
+# sparse representation will be used directly. Note: clause embeddings are only sparse when
+# the herbrand vectorizer is being used.
+clause_embedding_layers: 4
+
+# Number of dimensions of clause/action embeddings
+clause_embedding_size: 376
+
+# **** fields in embedder_args
+
+# How to aggregate clause-symbol features.
+clause_feat_aggr: mean
+
+# Clause vectorizer;
+# memory efficient herbrant template is the default vectorizer,
+# other options include MPNN, GLSTM, enigma++, enigma, gcn_embed, bochar_gcn_embed, charcnn_gcn_embed
+# gcn_embed_herbrand_enigma, bochar_gcn_embed_herbrand_enigma, charcnn_gcn_embed_herbrand_enigma
+#vectorizer: mem_htemplate  # train_game
+
+# Number of iterations from which we maintain the training history
+numItersForTrainExamplesHistory: 1
+
+
+# params used in GPU training (trail_dev_eval):
+
+# Optimizer (Adam or Lamb)
+optimizer: Adam
+
+# learning rate (for both Adam and Lamb)
+lr: 0.001
+# weight decay (only Lamb)
+wd: 0.01
+# beta one parameter for lamb
+beta1: 0.9
+# beta two parameter for lamb
+beta2: 0.99
+
+batch_size: 32
+
+# Number of Training Epochs    # no need to overfit per iteration
+epochs: 10
+
+# Number of Training Epochs in iteration 1, beneficial for vampire-based policy  # no need to overfit per iteration
+epochs_iter1: 10
+
+first_epoch_saved_model: 9
+
+
+# Weight of the policy loss in the overall loss function
+policy_loss_weight: 1.0
+
+# Entropy regularization hyper-parameter
+entropy_reg_loss_weight: 0.0
+
+# Weight of the value loss in the overall loss function
+value_loss_weight: 0.0
+
+# Whether to compute gradient dot product to monitor transfer/interference in learning
+grad_dot_prod: False 
+
+# advantage is also used here
+
+
+
+
+# Herbrand Vectorizer: fv consists only of [age, derived from negated conjecture, clause weight, num_literals] features
+# -- if set to 1, u should set append_age_features = 0
+only_age_features: False 
+
+# Neural network model to use
+nnet_model: attentive_pooling
+
+
+# 1: Temperature: how much do we trust the learned policy               
+# 2: MCTS max depth
+# 3: Minimun temperature at training. Temperature decay stops once it is reached
+# 4: Decay factor for the MCTS temperature. 
+# For iteration i, the MCTS temperature is given by: max(min_temp, temp * decay^(i-1))
+# problem - how to copy this script if a custom one is used?
+# minor issue:  you can't specify a number (e.g. '0.0'), since that gets typed as a float,
+# and this must be a string.  Use "0.0+0".
+compute_temp: "max(1.0, 3.0 * (0.89 ** (iter-1))) if iter < 11000 else 0.0"
+
+
+
+# Whether to keep the embedding size unchanged in each head. Otherwise, the embedding size
+# will be the original embedding size divided by the number of heads.
+keep_emb_size: 1
+
+# A parameter to filter out all collected examples to avoid redunduncy
+filter_collected_examples: False 
+
+# Number of convolutional layers when using GCN clause embeddings.
+num_gcn_conv_layers: 2
+
+# Number of linear layers after the node embedding layer
+num_node_embedding_linear_layers: 2
+
+# Size of character embeddings for each node in a clause graph
+node_char_embedding_size: 64
+
+# Activation function used by embedding layers
+# choices=["relu", "tanh", "sigmoid"]
+embedding_activation: relu
+
+# Option to use GCN implementation based on: https://github.com/rusty1s/pytorch_geometric.
+use_sparse_gcn_embed: True # originally, no arg, so 'true'
+
+# MPNN graph vectorizer: node state dimension.
+mpnn_node_state_dim: 64
+
+# MPNN graph vectorizer: edge state dimension.
+mpnn_edge_state_dim: 32
+
+# MPNN graph vectorizer: number of rounds
+mpnn_iters: 1
+
+# MPNN graph vectorizer: the total number of nodes to make embeddings for (ideally there is 15k symbols in mizar).
+mpnn_node_ct: 3000
+
+# MPNN graph vectorizer: the total number of edges to make embeddings for.
+mpnn_edge_ct: 250
+
+# Whether the value network and policy network are never evaluated (i.e. nnet.predict() returns random values).
+random_predict: False 
+
+# Number of layers in the value network
+value_net_layers: 2
+
+# Processed clauses feature type; options are 
+# {convex_all, convex_conj, conj_only, simple_sum, combined_only, weighted_all, weighted_conj, simple_gate_conj, simple_gate_all}
+proc_feat_type: simple_sum
+
+
+# The number of epochs without any noticeable relative improvement on the valid data to wait
+# before stopping early
+# stop early if there has not been any noticeable relative improvement on the valid data
+# (i.e.,  early_stop_thresold * best_valid_total_loss) in the past early_stop_patience epoch
+early_stopping_patience: 10
+
+# Number of units in each layer of the value network
+value_net_units: 100
+
+# The output size of the clause graph embedding layer
+graph_embedding_output_size: 64
+
+
+
+# Number of vectorizer based symmetries
+num_syms: 0
+
+# Weight in the reward function of the inverse of the number of steps
+reward_depth_weight: 1.0
+
+# Keep only the top K proof attempts for a given problem. A value less than or equal to zero "+
+# indicates that no pruning should be performed")
+keep_top_attempts_per_problem: 10000
+
+
+# Enigma vector size
+enigma_size: 2000
+
+# Enigma vectorizer should include subwalks
+incl_enigma_subseq: True 
+
+# Enigma term walk length
+enigma_seq_len: 3
+
+# The level of anonymity of predicates, functions and constants in pattern based vectorizers.\n"
+# The default level is 0 (no anonymity)\n"
+# 0 indicates that the full names of user defined predicates, functions and constants "
+# directly be used by those vectorizers. \n"
+# 1 indicates that only the type (i.e., predicate, function or constant) and the arity "
+predicate_term_anonymity_level: 2
+
+
+ez_reward: False
+reward_all_choices: False
+
+# drop examples that don't contain a new clause from used_in_proof
+# if you choose this, you must set reward_all_choices to True
+only_new_examples: False
+
+
+# Reward normalization.
+# 1 (absolute) indicates reward normalized by difficulty
+# 2 (relative) indicates reward normalized by the best reward on all attempts to solve a problem
+# Any other value indicates no normalization.
+reward_norm: 1
+
+# Indicates binary reward structure (1 or -1)
+binary_reward: False 
+
+# Whether to use time spent for reward calculation instead of number of steps.
+use_time_for_reward_calc: True 
+
+# Indicates whether to use ratio of useful inferrences or premises in reward/value computation
+use_useful_fraction: False 
+
+# The penalty to assign to useless steps. It must be a positive number.
+penalty: 0.0
+
+# The weight of the reward assigned based on limited number preceding useless steps.
+weight_reward_pred_useless: 0.0
+
+# Max allowed reward per problem, this should be beneficial for reward calculation when baseline could not solve the problem.
+max_reward_per_problem: 2.0
+
+# Minimal allowed reward per successful proof attempt
+min_reward_per_problem: 1.0
+
+# Maximun score of a game. The score is computed as max_score/number_of_steps 
+# (or max_score/time taken   if not use_time_for_reward_calc)
+max_score: 10.0
+
+# Weight in the reward function of the inverse of the number of useless inferred facts
+reward_breadth_weight: 0.0
+
+
+discounted_problems: []
+
+
+# Use advantage (i.e., (reward-value)) as opposed to just reward in the loss function
+advantage: False  
+
+
+
+# When discount_factor is not None, drop examples with discounted reward less than
+#   discounted_reward_drop_threshold * highest discounted reward
+discounted_reward_drop_threshold: 0.001
+
+# minimum relative improvement over the validation data that is considered progress
+early_stopping_thresold: 0.0001
+
+eval_interval: 1
+
+# Vector size for herbrand-based vectorizers
+herbrand_vector_size: 500
+
+
+# The factor by which to discount the reward for problems in discount_problem_filew
+problem_discount_factor: 0.01
+
+# cuda just stores 'torch.cuda.is_available()'
+# it is set automatically; it is an error to set it in explicitly.
+#cuda: bool
+
+# gamma, discount factor for reward calculation
+#        'discount_factor': float(parsed_args.discount_factor) if parsed_args.discount_factor is not None else None,
+# THIS IS HACKED BY THE PARSER:  don't explicitly set it to None in your opts.yaml, only set it to a float
+# Used in actor-critic.  values between 0 and 1 exclusive are meaningful.
+#discount_factor: None # hmm.. the hack works, but it is probably less confusing to use a magic value
+discount_factor: 12345678.0 # NUTS - the None hack suddenly no longer works. This magic value now represents None.
+
+# Dropout probability
+dropout_p: 0.5682203997117492
+
+# Minimal fraction of positive examples. Negative examples (i.e., those with a reward less "+
+# than EPS) will be dropped to maintain this minimal fraction of positive example")
+pos_example_fraction: 1.0
+
+# How to combine conjectures into embedding
+conj_aggr_type: mean
+
+# Chain-based Herbrand vectorizer should include subchains
+incl_subchains: True
+
+# Literal feature count
+max_literal_ct: 10
+
+# Weight feature count
+max_weight_ct: 30
+
+# Age feature count
+max_age: 200
+
+# Use set-of-support feature
+sos_feat: True
+
+# Number of layers for processed clause / negated conjecture combiner
+proc_nc_comb_layers: 2
+
+
+# Clause vectorizer;
+# memory efficient herbrant template is the default vectorizer, 
+# other options include MPNN, GLSTM, enigma++, enigma, gcn_embed, bochar_gcn_embed, charcnn_gcn_embed
+# gcn_embed_herbrand_enigma, bochar_gcn_embed_herbrand_enigma, charcnn_gcn_embed_herbrand_enigma
+vectorizer: gcn_embed
+
+# following five are params to GNCVectorizer/pgGraphVectorizer/other GCN-style vectorizer
+# Option to add heterogeneous edge types for embedding. (More expensive)
+heterogeneous_edges:   False
+
+# Option to add self floops to graph for embedding.
+graph_embedding_add_self_loops: True # originally, no arg, so 'true'
+
+# Option to add back edges to graph for embedding.
+graph_embedding_add_back_edges: False
+
+# Herbrand Vectorizer: whether to append [age, derived from negated conjecture, clause weight, num_literals] features
+append_age_features: True 
+
+# This indicates whether to first compute embeddings of nodes representing
+# user defined names (for predicates, functions, and constants) on a graph 
+# representing the whole initial theory and the negated conjectures and then 
+# use those embeddings as the initial embeddings of corresponding name nodes 
+# in graphs representing individual clauses)
+init_state_name_node_embeddings: True
+
+
+
+# Default architecture used for pytorch geometric
+vectorizer_arch: unet
+
+
+# CharCNN filters. The form is: 
+# filter1_out_channels,filter1_kernel_dim;filter2_out_channels,filter2_kernel_dim;...
+charcnn_filters: "2,20;3,20;4,20"
+
+# Option to use bias term in embedding layers
+embedding_use_bias: True
+
+# Option to use gating term in GCN convolutional layers during embedding.
+embedding_use_cnn_gate: False
+
+
+root_readout_only:     False
+
+# Size of type embeddings for each node in a clause graph
+node_type_embedding_size: 64
+
+# Option to use one-hot embeddings for node types with GCN vectorizer.
+use_one_hot_node_types: False
+
+# Option to use one-hot embeddings for action types with GCN vectorizer.
+use_one_hot_action_types: False
+
+
+# These are the statistics that are manually collected.
+# Alternatively, one run Trail with cProfile and then get readable output using 
+# something like launch-stats.py (which is just an example).
+# See launch-ee.py for details.
+print_caching_stats: True
+
+graph_embedding_max_depth: 9000
+gcn_skip_connections: True
+
+# If real_time_limit is True, then TIME_LIMIT is enforced using real time; if False, then cpu time.
+real_time_limit: True
+
+step_limit: 0 # non-0 limits episode evaluation by number of steps; TIME_LIMIT required to be 0. deterministic.
+
+# If ignore_initialization_time is True, then we do not include it in the time measured; if False, then we do.
+ignore_initialization_time:  True
+
+
+# don't know how to implement Optional[int] in yaml parser
+# still doesn't quite work
+deterministic_randseed: 0 # 0: no seeding; any other integer is used as a seed for all RNGs
+
+# if true, only uses episodes whose run time is better than all previous ones
+only_use_best_episodes: False
+
+# use a form of HER ala https://proceedings.mlr.press/v162/aygun22a/aygun22a.pdf
+use_HER: False
+
+print_clause_hashes: False
+
+# **** The following are very low-level options that not of general interest.
+
+# whether InactiveState should have a next_step field
+# this is apparently only needed for actor-critic, which isn't currently used.
+# It greatly expands the size of saved examples (nearly 10x) since it saves ALL states,
+# not just those used in the proof.
+state_next_step: False
+        
+# 
+pool_clauses: False
+
+save_id2clausemap: False
+
+# if False, then Clauses are not replaced by triples (iteration,dir,id) in the GPU input.
+# just shows that the replacement is optional.
+use_clause_pool: True
+
+clause_2_graph: False
+
+no_gpu_gz_dir: True
+
+
+# This is NOT to be used ordinarily!
+# It make the clause parser ignore all negations in the input.
+# The purpose is to show that Trail doesn't do that much worse.
+ignore_negation: False
+ignore_predicate_names: False
+
+fill_removed_positions: True
+
+drop_index: True
+use_InitStep: False

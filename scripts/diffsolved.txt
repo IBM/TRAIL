@@ -1,0 +1,28 @@
+
+f1=$(mktemp)
+f2=$(mktemp)
+sort -n -u $1 > $f1
+sort -n -u $2 > $f2
+
+echo sizes: $(wc -l < $f1) $(wc -l < $f2)
+echo "common: " $(grep -c -w -f $f1 $f2)
+echo "left:   " $(grep -c -v -w -f $f2 $f1)
+echo "right:  " $(grep -c -v -w -f $f1 $f2)
+
+rm -f $f1 $f2
+
+exit
+
+diff <(sort -n -u $1) <(sort -n -u $2) | python -c "
+import sys
+nl=0
+nr=0
+ns=0
+for line in sys.stdin:
+    if line.startsWith('<'):
+       nl=nl+1
+    if line.startsWith('>'):
+       nr=nr+1
+       
+   print(line)
+"

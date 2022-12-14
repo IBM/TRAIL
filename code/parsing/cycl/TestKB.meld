@@ -1,0 +1,60 @@
+(canonicalizerDirectiveForArg Kappa 2 LeaveSomeTermsAtEL)
+(canonicalizerDirectiveForArg trueRule 2 LeaveSomeTermsAtEL)
+(except (ist BaseKB (implies (and (genlPreds ?SPEC-PRED ?GENL-PRED) (relationAllExists ?SPEC-PRED ?COL-1 ?COL-2)) (relationAllExists ?GENL-PRED ?COL-1 ?COL-2))))
+(relationAllInstance ?PRED ?COL ?THING)
+(isa (FacetOfWithBasisFn EukaryoticCell facetBasedOnBinaryPred (QuantifiedVersionOfBinaryPredicateFn relationAllInstance numberOfChromosomeSets)) FacetingCollectionType)
+(isa relationAllInstance WebSearchCollectionInstanceRuleMacroPredicate-Ternary)
+(implies (and (isa ?HYP-CONT HypotheticalContext) (genlMt ?HYP-CONT ?TEMP-MT) (termDependsOn ?HYP-CONT ?TEMP-MT) (ist ?HYP-CONT ?ANT-PROP) (genlMt ?PROOF-CONT ?HYP-CONT) (termDependsOn ?PROOF-CONT ?HYP-CONT) (isa ?PROOF-CONT HypotheticalContext) (ist ?PROOF-CONT ?CONS-PROP)) (holdsIn ?TEMP (implies ?ANT-PROP ?CONS-PROP)))
+(implies (and (isa ?ARG-ISA ArgIsaBinaryPredicate) (constrainsArg ?ARG-ISA ?NUM)) (trueRule (CollectionRuleTemplateFn ArgIsaPredicate) (and (implies (?ARG-ISA ?RELN ?COL) (argIsa ?RELN ?NUM ?COL)) (implies (argIsa ?RELN ?NUM ?COL) (?ARG-ISA ?RELN ?COL)))))
+(implies (admittedAllArgument ?COL ?NUM ?RELN) (relationAllInstance (Kappa (?X ?Y) (admittedArgument ?X ?NUM ?Y)) ?COL ?RELN))
+(genls Leader Person)
+;; rtest
+;;
+(isa (BAAWithIDFn "DARPA-BAA-11-04") (BAAFromOrganizationFn DefenseAdvancedResearchProjectsAgency))
+(isa Lecturer PersonTypeByPositionInOrg)
+(requiredArg1Pred Sandwich sandwichFillings)
+(typeGenls MeatCutType OrganicMaterial)
+(isa FilledDonut SnackFoodType)
+(genlPreds hasAgents hasAuthorityOver)
+(genlPreds defnIff defnNecessary)
+(defnIff (StringOfMaximumLengthFn 60) (SubLQuoteFn CYC-STRING-IS-MAXIMUM-LENGTH))
+(isa interArgDifferent WFFConstraintPredicate)
+(genls Teacher AcademicProfessional)
+(defnIff PostalCode (SubLQuoteFn STRINGP))
+(<== (hasQuantity ?obj (HeatFn ?obj)) (isa ?obj ThermalPhysob))
+(argFormat maleficiary 2 SetTheFormat)
+(isa TheCollectionOf CollectionDenotingFunction)
+(constrainsArg arg11Isa 11)
+(isa July Collection)
+(disjointWith AstronomicalObject EdibleStuff)
+(strictlyFunctionalInArgs downtownOf 2)
+(genls (StandardIndustryProcessingLotTypeFn (ProductionIndustryTypeFn SemiconductorDevice) SemiconductorWafer) (GroupFn SemiconductorWafer))
+(not (genls DimSum Dumpling))
+(and (natFunction ?NAT ?FUNC) (isa ?TERM ?INDEP-COL))
+(isa specificationForConceptFilter StrictlyFunctionalPredicate)
+(implies (and (negationPreds ?NEGPRED ?PRED) (relationAllInstance ?PRED ?COL ?THING)) (forAll ?INST (or (not (isa ?INST ?COL)) (not (?NEGPRED ?INST ?THING)))))
+(isa (CollectionSubsetFn Course-Collegiate (TheSetOf ?COURSE (thereExists ?SITE (forAll ?SUB (and (isa ?SITE WorldWideWebSite) (implies (and (isa ?SUB Education) (subEvents ?COURSE ?SUB)) (actors ?SUB ?SITE))))))) FirstOrderCollection)
+(implies (and (isa ?X RealNumber) (isa ?Y RealNumber) (isa ?Z RealNumber) (evaluate ?PLUSFN (PlusFn ?Y ?Z)) (evaluate ?PRODUCT (TimesFn ?PLUSFN ?X)) (evaluate ?SUM (PlusFn ?TIMESFN ?TIMESFN-1)) (evaluate ?TIMESFN-1 (TimesFn ?X ?Y)) (evaluate ?TIMESFN (TimesFn ?X ?Z))) (equals ?PRODUCT ?SUM))
+(implies (and (evaluate ?QUOTIENTFN (QuotientFn ?TIMESFN ?M)) (evaluate ?TIMESFN (TimesFn ?M ?N))) (or (evaluate ?M 0) (evaluate ?N ?QUOTIENTFN)))
+(implies (and (natFunction ?NAT ?FUNC) (isa ?TERM ?INDEP-COL) (natArgument ?NAT ?N ?TERM) (interArgResultIsa ?FUNC ?N ?INDEP-COL ?DEP-COL)) (isa ?NAT ?DEP-COL))
+(in-microtheory EnglishMt)
+//(comment thereExists "A binary #$Quantifier that corresponds to the standard universal quantifier of predicate calculus.  The relation #$forAll takes as its arguments a variable (#$ELVariable) and a sentence (#$ELSentence-Assertible) in which, typically, that variable occurs free.  A closed formula (see #$CycLClosedFormula) of the form (#$forAll VAR SENT) is a \"universally quantified\" sentence that states (roughly) that every thing in the universe of discourse satisfies SENT.  For example,...")
+(comment AbrinToxin "A #$ToxinBioAgentType. #$AbrinToxin is derived from the Rosary Pea. It is closely related to #$RicinToxin.")
+(comment forAll "A binary #$Quantifier that corresponds to the standard universal quantifier of predicate calculus.  The relation #$forAll takes as its arguments a variable (#$ELVariable) and a sentence (#$ELSentence-Assertible) in which, typically, that variable occurs free.  A closed formula (see #$CycLClosedFormula) of the form (#$forAll VAR SENT) is a \"universally quantified\" sentence that states (roughly) that every thing in the universe of discourse satisfies SENT.  For example,...")
+(comment (ist UnitedStatesGeographyMt (isa FederalCongressionalDistrict SpatiallyDisjointRegionType)) "This need not be so.  There have been occasions when a state has both
+an at-large seat and narrower districts.  [This has happened when a state gained seats in the census, but the legislature could not agree on creating new districts.]  In such cases the at-large district overlaps the other districts.")
+(comment (ist PeopleDataMt (not (argFormat adoptiveMother 2 SingleEntry))) "This strange-looking assertion is needed to block the unnegated version from being inferred via a forward rules
+
+        and HL support, triggered by the assertion (#$genlPreds #$adoptiveMother #$mother). The assertion (#$arg2Format #$mother
+
+        #$SingleEntry) is in a specialized Mt that is not seen from #$HumanSocialLifeMt, and so is not supposed to apply to
+
+        #$adoptiveMother. Removing the negation will not only result in the propogation of a false argFormat assertion, it will
+
+        cause #$adoptiveMother to be given isas in Mts that were not desired.")
+(prettyString (CollectionSubsetFn OffshoreOilPlatform (TheSetOf ?PLATFORM (and (objectFoundInLocation ?PLATFORM PersianGulf) (owns UnitedArabEmirates ?PLATFORM)))) "offshore drilling platform in the sets of ?PLATFORM such that #$forAll holds of ?PLATFORM #$and holds of ?PLATFORM , located in the Persian Gulf the United Arab Emirates owns ?PLATFORM")
+(prettyString (CityNamedFn "Athens" Ohio-State) "Athens, Ohio")
+(prettyString (CityNamedFn "Athens" Ohio-State) "Athens")
+(prettyString (WesternRegionFn Yugoslavia) (UnicodeStringFn "the western region of &u42E;&u433;&u43E;&u441;&u43B;&u430;&u432;&u438;&u438;"))
+(prettyString-Canonical (SoftwareVersionFn AntiSniff-TheProgram "1.0.1") "@Stake AntiSniff version 1.0.1")
+(prettyString (SubcollectionOfWithRelationFromTypeFn MonetaryValue (Kappa (?STOCKTYPE ?SPREAD) (thereExists ?DATE (thereExists ?EXCHANGE (spreadForStockInExchangeOnDate ?STOCKTYPE ?SPREAD ?DATE ?EXCHANGE)))) StockTypeByBusinessAndClass) "Spread")

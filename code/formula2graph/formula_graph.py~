@@ -1,0 +1,533 @@
+from graphviz import Digraph
+import networkx as nx
+from logicclasses import *
+# from code.logicclasses import *
+
+# line 398 of holstep parser
+PROPOSITIONAL_CONNECTIVES = {"/\\", "\\/", "~", "==>", "<==", "<=>", "&", "|"}
+LIST_IMPLICATIONS = {"==>", "<==", "<=>"}
+LIST_OPERATORS = {"=", "o", ",", "+", "*", "EXP", "<=", "<", ">=", ">", "-",
+                  "DIV", "MOD", "treal_add", "treal_mul", "treal_le", "treal_eq", "/", "|-", "pow",
+                  "div", "rem", "==", "divides", "in", "insert", "union", "inter", "diff", "delete",
+                  "subset", "psubset", "has_size", "cross", "<=_c", "<_c", "=_c", ">=_c", ">_c", "..",
+                  "$", "PCROSS"}
+LIST_COMMUTATIVE_OPERATORS = {"!!", "!?", "!?!", "!@", "!\\", "!lambda", "=",
+                              "&", "/\\", "\\/", "|", "+", "*", "treal_add", "treal_mul", "~",
+                              "treal_eq", "==", "union", "inter", "=_c", "$", "pcross", "<=>"}
+LIST_OPERATORS_IMPLICATION = {"==>", "<=>", "<=="}
+FO_QUANT = {'!!', '!?', '!?!'}  #'!!' forall, '!?' exist, '!?!' exist unique
+HOL_QUANT = {'!@', '!\\', '!lambda'}
+QUANTIFIERS = FO_QUANT | HOL_QUANT
+EXIST_QUANT= {'!?', '!?!', '!@'}
+FORALL_QUANT={'!!', '!\\', '!lambda'}
+
+
+class NodeType(object):
+    """Enumerate class"""
+    VAR = 0
+    CONST = 1
+    OP = 2
+    FUNC = 3
+    PRED = 4
+    REIF = 5
+    NAME_NODE = 6
+    QUANT = 7
+    VARFUNC = 8  #we will need this when we extend to higher order
+    #list_anonym_types = [0, 1, 3, 4, 8]
+
+def type_printer(node_type):
+    """Print type string"""
+    d = {
+        NodeType.VAR: 'VAR',
+        NodeType.CONST: 'CONST',
+        NodeType.OP: 'OP',
+        NodeType.FUNC: 'FUNC',
+        NodeType.PRED: 'PRED',
+        NodeType.REIF: 'REIF',
+        NodeType.NAME_NODE: 'NAME_NODE',
+        NodeType.QUANT: 'QUANT',
+        NodeType.VARFUNC: 'VFUNC',
+    }
+    return d[node_type]
+
+
+
+def replace_node_ordered(node_list, old_node, new_node):
+    for index, node in enumerate(node_list):
+        if node == old_node:
+            node_list[index] = new_node
+
+
+def replace_node_to_list_ordered(node_list, old_node, new_list):
+    new_list.reverse()
+    for index, node in enumerate(node_list):
+        if node == old_node:
+            node_list.remove(node)
+            for i_node in new_list:
+                node_list.insert(index, i_node)
+
+
+class LogicNode:
+    def __init__(self, ntype, name, clause_id, node_id=None, verbosity=0):
+        self.id = node_id
+        self.name = name
+        self.clause_id = clause_id
+        self.is_active = None
+        self.verbosity = verbosity
+        self.type = ntype
+        self.is_user_def_name = False
+        if self.type == 6: #6 = node_name
+            self.is_user_def_name = True
+        self.incoming = [] #ordered list of parents
+        self.outgoing = [] #ordered list of arguments
+        self.is_commutative = False
+
+    def clone(self):
+        #clone the node but NOT incoming and outgoing edges
+        new_node = LogicNode(self.type, self.name, self.clause_id, self.id, self.verbosity)
+        new_node.is_active = self.is_active
+        new_node.is_user_def_name = self.is_user_def_name
+        new_node.is_commutative = self.is_commutative
+        return new_node
+
+    def __str__(self):
+        node_string = ""
+        # id
+        if self.verbosity > 2:
+            node_string += str(self.id)+"-"
+        #type
+        if self.verbosity > 0:
+            if self.type != None:
+                node_string += type_printer(self.type)
+                if self.verbosity == 1:
+                    node_string += "::"
+        #commutativity
+        if self.verbosity > 1:
+            node_string += "_"
+            if not self.is_commutative:
+                node_string += "n"
+            node_string += "c"
+            node_string += "::"
+        # name
+        if self.type==6:
+            node_string+="\""
+        if self.name:
+            node_string += str(self.name).replace("\\", "\\\ ")
+        else:
+            if self.verbosity == 0:
+                node_string += type_printer(self.type)
+        if self.type == 6:
+            node_string += "\""
+        return node_string
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class LogicGraph:
+    def __init__(self, name, clauses_list, is_cnf, anonym_variables, condense_variables, reification, verbosity=0):
+        self.name = name
+        self.graph = []
+        self.verbosity = verbosity
+        self.name_nodes_dict = {}
+        self.root = None
+        self.clauses_dict = {}
+        self.anonym_variables_flag = anonym_variables
+        self.condense_variables_flag = condense_variables
+        self.reification_flag = reification
+        self.is_cnf = is_cnf
+        self.number_of_clauses = 0
+        self.number_of_nodes = 0
+        if clauses_list:
+            self.number_of_clauses = len(clauses_list)
+            if is_cnf:
+                self.build_graph_cnf(clauses_list, verbosity)
+            else:
+                self.build_graph_formula(clauses_list, verbosity)
+            self.number_of_nodes = len(self.graph)
+            self.order_logic_graph()
+            #self.print_logic_graph(self.name+"_INPUT")
+            self.preprocessing()
+            #self.check_consistency()
+            #self.print_logic_graph(self.name + "_OUTPUT")
+
+
+    def clone(self):
+        new_logic_graph = LogicGraph(self.name, None, self.is_cnf, self.anonym_variables_flag, self.condense_variables_flag, self.reification_flag, self.verbosity)
+        new_logic_graph.number_of_clauses = self.number_of_clauses
+        new_logic_graph.number_of_nodes = self.number_of_nodes
+        nodes_correspondence = {}
+        for node in self.graph:
+            # create new node if not exist already
+            new_node = None
+            if node not in nodes_correspondence:
+                new_node = node.clone()
+                nodes_correspondence[node] = new_node
+            else:
+                new_node = nodes_correspondence[node]
+            new_logic_graph.graph.append(new_node)
+            #set outgoing edges
+            for out_node in node.outgoing:
+                new_out_node = None
+                if out_node not in nodes_correspondence:
+                    new_out_node = out_node.clone()
+                    nodes_correspondence[out_node] = new_out_node
+                else:
+                    new_out_node = nodes_correspondence[out_node]
+                new_node.outgoing.append(new_out_node)
+            # set incoming edges
+            for in_node in node.incoming:
+                new_in_node = None
+                if in_node not in nodes_correspondence:
+                    new_in_node = in_node.clone()
+                    nodes_correspondence[in_node] = new_in_node
+                else:
+                    new_in_node = nodes_correspondence[in_node]
+                new_node.incoming.append(new_in_node)
+        #copy clauses dictionary
+        for clause_id in self.clauses_dict:
+            new_logic_graph.clauses_dict[clause_id] = nodes_correspondence[self.clauses_dict[clause_id]]
+        # set root
+        new_logic_graph.root = nodes_correspondence[self.root]
+        return new_logic_graph
+
+
+    def build_graph_cnf(self, clauses_list, verbosity):
+        # only CNF
+        root_node = LogicNode(NodeType.OP, "&", -1, 0, verbosity)
+        self.root = root_node
+        self.graph.append(root_node)
+        for clause in clauses_list:
+            parent_literals = root_node
+            clause_id = clauses_list.index(clause)
+            if len(clause.literals) > 1:
+                or_node = LogicNode(NodeType.OP, "|", clause_id, 0, verbosity)
+                self.clauses_dict[clause_id] = or_node
+                or_node.is_active = True
+                self.graph.append(or_node)
+                root_node.outgoing.append(or_node)
+                or_node.incoming.append(root_node)
+                parent_literals = or_node
+            for literal in clause.literals:
+                parent_this_literal = parent_literals
+                if literal.negated:
+                    not_node = LogicNode(NodeType.OP, "~", clause_id, 0, verbosity)
+                    self.graph.append(not_node)
+                    parent_this_literal = not_node
+                    if clause_id not in self.clauses_dict:
+                        self.clauses_dict[clause_id] = not_node
+                        not_node.is_active = True
+                    parent_literals.outgoing.append(not_node)
+                    not_node.incoming.append(parent_literals)
+                literal_node = None
+                if type(literal.atom.predicate) == EqualityPredicate:
+                    #literal_node = LogicNode(NodeType.OP, literal.atom.predicate.content, clause_id, 0, verbosity)
+                    literal_node = LogicNode(NodeType.OP, "=", clause_id, 0, verbosity)
+                else:
+                    literal_node = LogicNode(NodeType.PRED, literal.atom.predicate.content, clause_id, 0, verbosity)
+                if clause_id not in self.clauses_dict:
+                    self.clauses_dict[clause_id] = literal_node
+                    literal_node.is_active = True
+                self.graph.append(literal_node)
+                literal_node.incoming.append(parent_this_literal)
+                parent_this_literal.outgoing.append(literal_node)
+                for arg in literal.atom.arguments:
+                    arg_node = self.add_term(arg, clause_id, literal_node, verbosity)
+                    literal_node.outgoing.append(arg_node)
+
+    def add_term(self, term, clause_id, parent_node, verbosity):
+        if type(term) == ComplexTerm:
+            term_node = LogicNode(NodeType.FUNC, term.functor.content, clause_id, 0, verbosity)
+            term_node.incoming.append(parent_node)
+            self.graph.append(term_node)
+            for arg in term.arguments:
+                arg_node = self.add_term(arg, clause_id, term_node, verbosity)
+                term_node.outgoing.append(arg_node)
+        elif type(term) == Variable:
+            term_node = LogicNode(NodeType.VAR, term.content, clause_id, 0, verbosity)
+            term_node.incoming.append(parent_node)
+            self.graph.append(term_node)
+        elif type(term) == Constant or type(term) == MatchableConstant:
+            term_node = LogicNode(NodeType.CONST, term.content, clause_id, 0, verbosity)
+            term_node.incoming.append(parent_node)
+            self.graph.append(term_node)
+        return term_node
+
+    def build_graph_formula(self, clauses_list, verbosity):
+        # generic formula, not only CNF
+        #TODO
+        pass
+
+    def preprocessing(self):
+        # it is important to follow the preprocessing order:
+        # clean_graph, add_types, commutativity, add_name_invariance
+        if self.condense_variables_flag:
+            self.condense_var()
+        self.clean_graph()
+        self.commutativity()
+        self.check_consistency()
+        if self.reification_flag:
+            self.reification()
+            #self.check_consistency()
+        self.add_name_invariance()
+        #self.check_consistency()
+
+    def check_consistency(self):
+        assert len(self.graph) == self.number_of_nodes
+        for node in self.graph:
+            for child in node.outgoing:
+                assert node in child.incoming
+            for parent in node.incoming:
+                assert node in parent.outgoing
+
+    def condense_var(self):
+        variable_nodes = []
+        variable_names = []
+        for node in self.graph:
+            if node.type == 0:
+                variable_nodes.append(node)
+                variable_names.append(node.name)
+        unique_var_names = list(set(variable_names))
+        for name in unique_var_names:
+            if variable_names.count(name) > 1:
+                clauses = []
+                for var_node in variable_nodes:
+                    if var_node.name == name:
+                        clauses.append(var_node.clause_id)
+                clauses = list(set(clauses))
+                for clause in clauses:
+                    variables2condense = []
+                    for var_node in variable_nodes:
+                        if var_node.name == name and var_node.clause_id == clause:
+                            variables2condense.append(var_node)
+                    new_var_node = variables2condense[0]
+                    for var in variables2condense[1:]:
+                        new_var_node.incoming += var.incoming
+                        for parent in var.incoming:
+                            replace_node_ordered(parent.outgoing, var, new_var_node)
+                        self.graph.remove(var)
+                        self.number_of_nodes -= 1
+                    variable_names = list(filter(name.__ne__, variable_names))
+            else:
+                variable_names.remove(name)
+
+
+    def print_logic_graph(self, graph_name):
+        if graph_name:
+            graph_name = graph_name.replace("\n", "").replace(" ", "")
+        else:
+            graph_name = "no_name"
+        di_graph = Digraph(comment=graph_name)
+        for node in self.graph:
+            if node.type in [5]:
+                di_graph.attr("node", shape='ellipse', color='black', style='filled', fillcolor='white')
+            if node.type in [0, 1]:
+                di_graph.attr("node", shape='ellipse', color='black', style='filled', fillcolor='aquamarine')
+            if node.type in [2, 3, 4, 7]:
+                di_graph.attr("node", shape='ellipse', color='black', style='filled', fillcolor='skyblue')
+            if node.type == 6:
+                di_graph.attr("node", shape='box', color='black', style='filled', fillcolor='mistyrose')
+            di_graph.node(str(node.id), str(node))
+        for node in self.graph:
+            for out in node.outgoing:
+                di_graph.edge(str(node.id), str(out.id))
+        di_graph.render("visualizer_output/" + graph_name + "_out", view=False)
+
+    def order_logic_graph(self):
+        for node_index in range(len(self.graph)):
+            self.graph[node_index].id = node_index
+        new_nodes_list = []
+        nx_graph = nx.DiGraph()
+        for node in self.graph:
+            nx_graph.add_node(node.id)
+        for node in self.graph:
+            for out_node in node.outgoing:
+                nx_graph.add_edge(node.id, out_node.id)
+        ordered_nodes_nx = [x for x in nx.topological_sort(nx_graph)]
+        for nx_node in ordered_nodes_nx:
+            for node in self.graph:
+                if node.id == nx_node:
+                    new_nodes_list.append(node)
+        self.graph = new_nodes_list
+        for node in self.graph:
+            node.id = self.graph.index(node)
+
+    def commutativity(self):
+        """ handle sequences of commutative operators of the same type
+                enforce commutativity of quantifiers in sequence of the same type
+                enforce commutativity of sequences of same commutative operators (and, or etc)
+            input: FormulaToGraph
+            output: FormulaToGraph
+        """
+        pair_to_process = None
+        for p_node in self.graph:
+            if p_node.name in LIST_COMMUTATIVE_OPERATORS:
+                p_node.is_commutative = True
+                if p_node.name not in QUANTIFIERS and p_node.type in [3,4]:
+                    for p_out_node in p_node.outgoing:
+                        if p_out_node.name == p_node.name:
+                            pair_to_process = [p_node.id, p_out_node.id]
+        while pair_to_process != None:
+            node = None
+            out_node = None
+            for i in self.graph:
+                if i.id == pair_to_process[0]:
+                    node = i
+                elif i.id == pair_to_process[1]:
+                    out_node = i
+            assert out_node in node.outgoing
+            assert node in out_node.incoming
+            node.incoming += out_node.incoming
+            node.incoming.remove(node)
+            node.outgoing += out_node.outgoing
+            node.outgoing.remove(out_node)
+            for parent in out_node.incoming:
+                replace_node_ordered(parent.outgoing, out_node, node)
+            for child in out_node.outgoing:
+                replace_node_ordered(child.incoming, out_node, node)
+            self.graph.remove(out_node)
+            self.number_of_nodes -= 1
+            self.order_logic_graph()
+            # find new pair_to_process
+            pair_to_process = None
+            for p_node in self.graph:
+                if p_node.name in LIST_COMMUTATIVE_OPERATORS and not p_node.name in QUANTIFIERS:
+                    for p_out_node in p_node.outgoing:
+                        if p_out_node.name == p_node.name:
+                            pair_to_process = [p_node.id, p_out_node.id]
+                            break
+                if pair_to_process != None: #find one and stop
+                    break
+        for p_node in self.graph:
+            if len(p_node.outgoing)<2:
+                p_node.is_commutative = True
+
+    def reification(self):
+        """ reification of formulas
+            adding nodes for outgoing edges 
+            of non-simmetric operators
+            input: FormulaToGraph
+            output: FormulaToGraph
+            assumptions: argument in the list of outgoing edges are already ordered
+        """
+        processed = []
+        subtree2process = [self.root]
+        while len(subtree2process) > 0:
+            node2process = subtree2process.pop(0)
+            processed.append(node2process)
+            list_outgoing_nodes = [x for x in node2process.outgoing]
+            for nn in list_outgoing_nodes:
+                if nn not in subtree2process and nn not in processed:
+                    subtree2process.append(nn)
+            if not node2process.is_commutative:
+                while len(list_outgoing_nodes) > 0:
+                    index = len(node2process.outgoing) - len(list_outgoing_nodes)
+                    current_child_node = list_outgoing_nodes.pop(0)
+                    node2process.outgoing.remove(current_child_node)
+                    current_child_node.incoming.remove(node2process)
+                    new_reif_node = LogicNode(NodeType.REIF, str(index), node2process.clause_id, verbosity=self.verbosity)
+                    new_reif_node.is_commutative = True
+                    new_reif_node.incoming.append(node2process)
+                    new_reif_node.outgoing.append(current_child_node)
+                    current_child_node.incoming.append(new_reif_node)
+                    node2process.outgoing.append(new_reif_node)
+                    self.graph.append(new_reif_node)
+                    self.number_of_nodes += 1
+        self.order_logic_graph()
+
+    def clean_graph(self, rename=False):
+        # anonimizing variables
+        for node in self.graph:
+            node.name.replace(" ", "")
+            if node.type == 0:
+                if rename:
+                    node.name = "VAR"
+            elif node.type == 8:
+                if rename:
+                    node.name = "VARFUNC"
+
+    def add_name_invariance(self):
+        #adding node names in separate nodes
+        names = []
+        list_anonym_types = [0, 1, 3, 4, 8]
+        if self.anonym_variables_flag:
+            list_anonym_types = [1, 3, 4]
+        for node in self.graph:
+            if node.type in list_anonym_types:
+                if not(node.name in LIST_OPERATORS):
+                    name_node = None
+                    if node.name not in names:
+                        name_node = LogicNode(6, node.name, -1, (self.number_of_nodes+1), self.verbosity)
+                        self.number_of_nodes += 1
+                        self.name_nodes_dict[name_node.name] = name_node
+                        self.graph.append(name_node)
+                        names.append(node.name)
+                    else:
+                        for n_node in self.name_nodes_dict.keys():
+                            if n_node == node.name:
+                                name_node = self.name_nodes_dict[n_node]
+                                break
+                    node.is_user_def_name = True
+                    node.outgoing.append(name_node)
+                    name_node.incoming.append(node)
+        self.order_logic_graph()
+        # #anonimizing nodes
+        # for node in self.graph:
+        #     if node.is_user_def_name and node.type != 6:
+        #         node.name = None
+        # self.order_logic_graph()
+
+
+    def get_clause(self, clause_id):
+        ''' 
+        return the root of the clause of a given id
+        '''
+        return self.clauses_dict[clause_id]
+
+    def add_clauses(self, new_clauses):
+        clauses_ids = []
+        clauses_graph = LogicGraph("clauses_graph", new_clauses, self.is_cnf, self.anonym_variables_flag, self.condense_variables_flag, self.reification_flag, self.verbosity)
+        #processing top AND node
+        for clause in clauses_graph.root.outgoing:
+            replace_node_ordered(clause.incoming, clauses_graph.root, self.root)
+            self.root.outgoing.append(clause)
+        #updating clauses ids
+        for node in clauses_graph.graph:
+            if node.clause_id!=-1:
+                node.clause_id+=self.number_of_clauses
+        # processing shared name nodes
+        for name_node in clauses_graph.name_nodes_dict.keys():
+            if name_node in self.name_nodes_dict.keys():
+                for in_node in clauses_graph.name_nodes_dict[name_node].incoming:
+                    replace_node_ordered(in_node.outgoing, clauses_graph.name_nodes_dict[name_node], self.name_nodes_dict[name_node])
+                    self.name_nodes_dict[name_node].incoming.append(in_node)
+                clauses_graph.graph.remove(clauses_graph.name_nodes_dict[name_node])
+            else:
+                self.name_nodes_dict[name_node]=clauses_graph.name_nodes_dict[name_node]
+        # adding clauses
+        for key in clauses_graph.clauses_dict.keys():
+            self.clauses_dict[key+self.number_of_clauses]=clauses_graph.clauses_dict[key]
+            clauses_ids.append(key+self.number_of_clauses)
+        # adding nodes
+        for node in clauses_graph.graph:
+            if node != clauses_graph.root:
+                self.graph.append(node)
+
+        # updating parameters
+        self.number_of_clauses = len(self.clauses_dict)
+        self.number_of_nodes = len(self.graph)
+        self.order_logic_graph()
+        # return list of id
+        return clauses_ids
+
+    def deactivate_clause(self, clause_id):
+        ''' 
+        deactivate the clause of a given id
+        '''
+        self.clauses_dict[clause_id].is_active = False
+
+    def activate_clause(self, clause_id):
+        ''' 
+        activate the clause of a given id
+        '''
+        self.clauses_dict[clause_id].is_active = True

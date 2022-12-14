@@ -1,0 +1,1 @@
+fof(test2, axiom, (! [A]: ( p(A) => q(imaconst) )  )).

@@ -1,0 +1,1 @@
+fof(dt_k2_group_1, axiom,  ![X,Y]: ( p(imaconst) & ~ q(X) )).

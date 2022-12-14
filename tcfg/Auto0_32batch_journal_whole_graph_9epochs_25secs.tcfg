@@ -1,0 +1,4 @@
+/==YAML==/
+early_stopping_patience: 10
+init_state_name_node_embeddings: True
+first_epoch_saved_model: 9

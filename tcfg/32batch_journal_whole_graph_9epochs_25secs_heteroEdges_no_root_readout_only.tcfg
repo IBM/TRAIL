@@ -1,0 +1,19 @@
+TE_GET_LITERAL_SELECTION='' 
+NUM_TRAINING_ITERS=40
+early_stopping_patience: 10
+init_state_name_node_embeddings: True
+first_epoch_saved_model: 9
+heterogeneous_edges: True
+root_readout_only: False
+
+# SUBJOB=a0
+TRAIL_AUTO=0
+
+# SUBJOB=a1
+TRAIL_AUTO=1
+
+# SUBJOB=a2
+TRAIL_AUTO=2
+
+# SUBJOB=ta
+E_OPTIONS="-H --filter-orphans-limit --forward-contract-limit -tAuto --literal-selection-strategy=SelectLargestNegLit --training-examples=1 --output-level=0 --proof-object --resources-info"
