@@ -64,7 +64,7 @@ tensorflow==2.11.0
 timeout-decorator==0.5.0
 torchtext==0.2.3
 typing==3.7.4.3
-pytorch_lamb
+pytorch-lamb
 EOF
 )
 
