@@ -173,10 +173,16 @@ If you use TRAIL in your research, please cite our papers:
   year={2022},
   publisher={IEEE}
 }
+@misc{fokoue2023ensemble,
+  title={An Ensemble Approach for Automated Theorem Proving Based on Efficient Name Invariant Graph Neural Representations}, 
+  author={Achille Fokoue and Ibrahim Abdelaziz and Maxwell Crouse and Shajith Ikbal and Akihiro Kishimoto and Guilherme Lima and Ndivhuwo Makondo and Radu Marinescu},
+  booktitle={International Joint Conferences on Artificial Intelligence (IJCAI)}
+  year={2023},
+}
 @inproceedings{crouse2021deep,
   title={A deep reinforcement learning approach to first-order logic theorem proving},
   author={Crouse, Maxwell and Abdelaziz, Ibrahim and Makni, Bassem and Whitehead, Spencer and Cornelio, Cristina and Kapanipathi, Pavan and Srinivas, Kavitha and Thost, Veronika and Witbrock, Michael and Fokoue, Achille},
-  booktitle={Proceedings of the AAAI Conference on Artificial Intelligence},
+  booktitle={Proceedings of the AAAI Conference on Artificial Intelligence (AAAI)},
   volume={35},
   number={7},
   pages={6279--6287},
